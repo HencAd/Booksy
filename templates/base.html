@@ -1,0 +1,139 @@
+{% load static %}
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Booksy App{% endblock %}</title>
+
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700">
+    <link rel="stylesheet" href="{% static 'booksy/font-awesome-4.7.0/css/font-awesome.min.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/css/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/css/datepicker.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/slick/slick.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/slick/slick-theme.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/css/templatemo-style.css' %}">
+    <link rel="stylesheet" href="{% static 'booksy/css/custom.css' %}">
+</head>
+
+<body>
+    <div class="tm-main-content" id="top">
+        <div class="tm-top-bar-bg"></div>
+
+        <div class="tm-top-bar" id="tm-top-bar">
+            <div class="container">
+                <div class="row">
+                    <nav class="navbar navbar-expand-lg narbar-light">
+                        <a class="navbar-brand mr-auto" href="{% url 'home' %}">
+                            BooksyApp
+                        </a>
+
+                        <button type="button"
+                                id="nav-toggle"
+                                class="navbar-toggler collapsed"
+                                data-toggle="collapse"
+                                data-target="#mainNav"
+                                aria-controls="mainNav"
+                                aria-expanded="false"
+                                aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <div id="mainNav" class="collapse navbar-collapse tm-bg-white">
+                            <ul class="navbar-nav ml-auto">
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'home' %}">Start</a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{% url 'service_list' %}">Usługi</a>
+                                </li>
+
+                                {% if user.is_authenticated %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'profile' %}">Profil</a>
+                                    </li>
+
+                                    {% if user.provider %}
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{% url 'my_service_list' %}">Moje usługi</a>
+                                        </li>
+                                    {% endif %}
+
+                                    <li class="nav-item">
+                                        <form method="POST" action="{% url 'logout' %}" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="nav-link btn btn-link" style="cursor:pointer; color:#0c5460; font-size: 13px; font-weight: 700;">
+                                                Wyloguj
+                                            </button>
+                                        </form>
+                                    </li>
+                                {% else %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'login' %}">Zaloguj</a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'register' %}">Zarejestruj</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <div class="tm-page-wrap mx-auto">
+
+            {% if messages %}
+                <div class="container mt-4">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block hero %}{% endblock %}
+
+            <main>
+                {% block content %}{% endblock %}
+            </main>
+
+            <footer>
+                <p>
+                    Copyright &copy;
+                    <span class="tm-current-year"></span>
+                    BooksyApp
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="{% static 'booksy/js/jquery-1.11.3.min.js' %}"></script>
+    <script src="{% static 'booksy/js/popper.min.js' %}"></script>
+    <script src="{% static 'booksy/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'booksy/js/datepicker.min.js' %}"></script>
+    <script src="{% static 'booksy/js/jquery.scrollTo.min.js' %}"></script>
+    <script src="{% static 'booksy/js/jquery.singlePageNav.min.js' %}"></script>
+    <script src="{% static 'booksy/slick/slick.min.js' %}"></script>
+
+
+    <script>
+        $(function () {
+            $(window).on("scroll", function () {
+                if ($(window).scrollTop() > 100) {
+                    $(".tm-top-bar").addClass("active");
+                } else {
+                    $(".tm-top-bar").removeClass("active");
+                }
+            });
+
+            $(".tm-current-year").text(new Date().getFullYear());
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Moje usługi{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="tm-content-box p-4 bg-white">
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="text-uppercase mb-0">Moje usługi</h2>
+
+                <a href="{% url 'service_create' %}" class="btn btn-primary tm-btn">
+                    Dodaj usługę
+                </a>
+            </div>
+
+            {% for service in services %}
+                <div class="tm-recommended-place">
+                    <div class="tm-recommended-description-box">
+                        <h3 class="tm-recommended-title">{{ service.name }}</h3>
+
+                        <p class="tm-text-gray">
+                            {{ service.description|default:"Brak opisu"|truncatewords:25 }}
+                        </p>
+
+                        <p>Czas trwania: {{ service.duration_minutes }} min</p>
+
+                        {% if service.is_active %}
+                            <p class="text-success">Aktywna</p>
+                        {% else %}
+                            <p class="text-muted">Nieaktywna</p>
+                        {% endif %}
+                    </div>
+
+                    <a href="{% url 'my_service_detail' service.pk %}" class="tm-recommended-price-box">
+                        <p class="tm-recommended-price">{{ service.price }} zł</p>
+                        <p class="tm-recommended-price-link">Szczegóły</p>
+                    </a>
+                </div>
+            {% empty %}
+                <p>Nie masz jeszcze żadnych usług.</p>
+
+                <a href="{% url 'service_create' %}" class="btn btn-primary tm-btn mt-3">
+                    Dodaj pierwszą usługę
+                </a>
+            {% endfor %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Wylogowano{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mx-auto">
+                <div class="tm-content-box p-4 bg-white text-center">
+
+                    <h2 class="text-uppercase mb-4">Zostałeś wylogowany</h2>
+
+                    <p class="text-muted mb-4">
+                        Twoja sesja została zakończona.
+                    </p>
+
+                    <a href="{% url 'login' %}" class="btn btn-primary tm-btn">
+                        Zaloguj się ponownie
+                    </a>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

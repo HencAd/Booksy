@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Logowanie{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    <h2 class="text-uppercase mb-4 text-center">Logowanie</h2>
+
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        {{ form|crispy }}
+
+                        <button class="btn btn-primary tm-btn mt-3" type="submit">
+                            Zaloguj się
+                        </button>
+                    </form>
+
+                    <div class="border-top pt-3 mt-4">
+                        <small class="text-muted">
+                            Nie masz konta?
+                            <a class="ml-2" href="{% url 'register' %}">
+                                Zarejestruj się
+                            </a>
+                        </small>
+                    </div>
+
+                    <div class="pt-2">
+                        <small class="text-muted">
+                            <a href="{% url 'password_reset' %}">
+                                Nie pamiętasz hasła?
+                            </a>
+                        </small>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

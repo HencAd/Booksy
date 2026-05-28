@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if object %}Edytuj usługę{% else %}Dodaj usługę{% endif %}
+{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    <h2 class="text-uppercase mb-4">
+                        {% if object %}
+                            Edytuj usługę
+                        {% else %}
+                            Dodaj usługę
+                        {% endif %}
+                    </h2>
+
+                    <form method="POST">
+                        {% csrf_token %}
+
+                        {{ form|crispy }}
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary tm-btn">
+                                {% if object %}
+                                    Zapisz zmiany
+                                {% else %}
+                                    Dodaj usługę
+                                {% endif %}
+                            </button>
+
+                            <a href="{% url 'my_service_list' %}" class="btn btn-secondary tm-btn ml-2">
+                                Anuluj
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

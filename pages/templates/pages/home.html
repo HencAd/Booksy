@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Strona główna{% endblock %}
+
+{% block hero %}
+<section class="tm-banner">
+    <div class="tm-container-outer tm-banner-bg">
+        <div class="container">
+            <div class="row tm-banner-row tm-banner-row-header">
+                <div class="col-xs-12">
+                    <div class="tm-banner-header">
+                        <h1 class="text-uppercase tm-banner-title">Znajdź usługę</h1>
+                        <p class="tm-banner-subtitle">Umów wizytę u wybranego usługodawcy.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row tm-banner-row" id="tm-section-search">
+                <form action="{% url 'service_list' %}" method="get" class="tm-search-form tm-section-pad-2">
+                    <div class="form-row tm-search-form-row">
+                        <div class="form-group tm-form-group tm-form-group-pad tm-form-group-1">
+                            <label for="serviceSearch">Czego szukasz?</label>
+                            <input name="q" type="text" class="form-control" id="serviceSearch"
+                                   placeholder="np. manicure, masaż, fryzjer">
+                        </div>
+
+                        <div class="form-group tm-form-group tm-form-group-pad tm-form-group-3">
+                            <label for="minPrice">Cena od</label>
+                            <input name="min_price" type="number" class="form-control" id="minPrice">
+                        </div>
+
+                        <div class="form-group tm-form-group tm-form-group-pad tm-form-group-3">
+                            <label for="maxPrice">Cena do</label>
+                            <input name="max_price" type="number" class="form-control" id="maxPrice">
+                        </div>
+
+                        <div class="form-group tm-form-group tm-form-group-pad tm-form-group-1">
+                            <label>&nbsp;</label>
+                            <button type="submit" class="btn btn-primary tm-btn tm-btn-search text-uppercase">
+                                Szukaj
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="tm-banner-overlay"></div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 mx-auto tm-about-text-wrap text-center">
+                <h2 class="text-uppercase mb-4">Najnowsze <strong>usługi</strong></h2>
+                <p class="mb-4">Sprawdź ostatnio dodane usługi i umów termin.</p>
+                <a href="{% url 'service_list' %}" class="text-uppercase btn-primary tm-btn">
+                    Zobacz wszystkie usługi
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="tm-container-outer">
+    <div class="tab-pane active">
+        <div class="tm-recommended-place-wrap">
+            {% for service in services %}
+                <div class="tm-recommended-place">
+                    <div class="tm-recommended-description-box">
+                        <h3 class="tm-recommended-title">{{ service.name }}</h3>
+                        <p class="tm-text-highlight">{{ service.provider.business_name }}</p>
+                        <p class="tm-text-gray">{{ service.description|default:"Brak opisu"|truncatewords:25 }}</p>
+                        <p>Czas trwania: {{ service.duration_minutes }} min</p>
+                    </div>
+
+                    <a href="{% url 'service_detail' service.pk %}" class="tm-recommended-price-box">
+                        <p class="tm-recommended-price">{{ service.price }} zł</p>
+                        <p class="tm-recommended-price-link">Szczegóły</p>
+                    </a>
+                </div>
+            {% empty %}
+                <p>Brak aktywnych usług.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

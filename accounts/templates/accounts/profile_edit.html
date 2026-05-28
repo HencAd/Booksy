@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Edytuj profil{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    <h2 class="text-uppercase mb-4">Edytuj profil</h2>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <h4 class="mb-3">Dane użytkownika</h4>
+                        {{ u_form|crispy }}
+
+                        <hr class="my-4">
+
+                        <h4 class="mb-3">Profil</h4>
+                        {{ p_form|crispy }}
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary tm-btn">
+                                Zapisz zmiany
+                            </button>
+
+                            <a href="{% url 'profile' %}" class="btn btn-secondary tm-btn ml-2">
+                                Anuluj
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

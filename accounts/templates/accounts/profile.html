@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Profil{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    {% if profile_type == "client" %}
+                        <h1 class="text-uppercase mb-4">Profil klienta</h1>
+
+                        <h3 class="mb-4">{{ user.username }}</h3>
+
+                        <p><strong>Imię:</strong> {{ user.first_name|default:"" }}</p>
+                        <p><strong>Nazwisko:</strong> {{ user.last_name|default:"" }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Numer telefonu:</strong> {{ profile.phone|default_if_none:"" }}</p>
+                        <p><strong>Data urodzenia:</strong> {{ profile.birth_date|date:"d.m.Y"|default_if_none:"" }}</p>
+
+                    {% elif profile_type == "provider" %}
+                        <h1 class="text-uppercase mb-4">Profil firmowy</h1>
+
+                        <h3 class="mb-4">{{ user.username }}</h3>
+
+                        <p><strong>Imię:</strong> {{ user.first_name|default:"" }}</p>
+                        <p><strong>Nazwisko:</strong> {{ user.last_name|default:"" }}</p>
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>Nazwa firmy:</strong> {{ profile.business_name }}</p>
+                        <p><strong>Adres firmy:</strong> {{ profile.address|default_if_none:"" }}</p>
+                        <p><strong>Numer telefonu:</strong> {{ profile.phone|default_if_none:"" }}</p>
+                        <p><strong>Bio:</strong> {{ profile.bio|default_if_none:"" }}</p>
+
+                        <div class="mt-4">
+                            <a class="btn btn-primary tm-btn" href="{% url 'my_service_list' %}">
+                                Moje usługi
+                            </a>
+                        </div>
+                    {% else %}
+                        <h1 class="text-uppercase mb-4">Profil</h1>
+                        <p>Nie znaleziono profilu użytkownika.</p>
+                    {% endif %}
+
+                    <div class="border-top pt-3 mt-4">
+                        <a class="btn btn-primary tm-btn" href="{% url 'profile_edit' %}">
+                            Edytuj profil
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock content %}

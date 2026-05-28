@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }}{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    <h2 class="text-uppercase mb-4">{{ service.name }}</h2>
+
+                    <p class="tm-text-gray">
+                        {{ service.description|default:"Brak opisu" }}
+                    </p>
+
+                    <p><strong>Cena:</strong> {{ service.price }} zł</p>
+                    <p><strong>Czas trwania:</strong> {{ service.duration_minutes }} min</p>
+
+                    {% if service.is_active %}
+                        <p class="text-success"><strong>Status:</strong> aktywna</p>
+                    {% else %}
+                        <p class="text-muted"><strong>Status:</strong> nieaktywna</p>
+                    {% endif %}
+
+                    <p><strong>Utworzono:</strong> {{ service.created_at|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Ostatnia aktualizacja:</strong> {{ service.updated_at|date:"d.m.Y H:i" }}</p>
+
+                    <div class="border-top pt-3 mt-4">
+                        <a href="{% url 'service_update' service.pk %}" class="btn btn-primary tm-btn">
+                            Edytuj
+                        </a>
+
+                        <a href="{% url 'my_service_list' %}" class="btn btn-secondary tm-btn ml-2">
+                            Wróć do listy
+                        </a>
+
+                        {% if service.is_active %}
+                            <form method="POST"
+                                  action="{% url 'service_deactivate' service.pk %}"
+                                  style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger tm-btn ml-2">
+                                    Dezaktywuj
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
