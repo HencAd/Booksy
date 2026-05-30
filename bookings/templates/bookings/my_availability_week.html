@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Moja dostępność{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-9 mx-auto">
+                <div class="tm-content-box p-4 bg-white">
+
+                    <h2 class="text-uppercase mb-4">Moja dostępność</h2>
+
+                    <p class="text-muted mb-4">
+                        Ustaw dni i godziny, w których przyjmujesz rezerwacje.
+                    </p>
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="form-group mb-4">
+                            <label for="slot_interval_minutes">
+                                Co ile minut mają być proponowane terminy?
+                            </label>
+
+                            <select
+                                name="slot_interval_minutes"
+                                id="slot_interval_minutes"
+                                class="form-control"
+                            >
+                                {% for value, label in slot_interval_choices %}
+                                    <option
+                                        value="{{ value }}"
+                                        {% if booking_settings.slot_interval_minutes == value %}selected{% endif %}
+                                    >
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+
+                            <small class="form-text text-muted">
+                                To ustawienie określa, co ile minut klient zobaczy możliwe godziny rozpoczęcia wizyty.
+                            </small>
+                        </div>
+                        {% for day in days %}
+                            <div class="row align-items-center border-bottom py-3">
+                                <div class="col-md-3">
+                                    <div class="form-check">
+                                        <input
+                                            class="form-check-input availability-checkbox"
+                                            type="checkbox"
+                                            name="day_{{ day.value }}_enabled"
+                                            id="day_{{ day.value }}_enabled"
+                                            data-day="{{ day.value }}"
+                                            {% if day.is_enabled %}checked{% endif %}
+                                        >
+                                        <label class="form-check-label" for="day_{{ day.value }}_enabled">
+                                            {{ day.label }}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="day_{{ day.value }}_start">Od</label>
+                                    <input
+                                        type="time"
+                                        class="form-control availability-time"
+                                        name="day_{{ day.value }}_start"
+                                        id="day_{{ day.value }}_start"
+                                        value="{{ day.start_time }}"
+                                    >
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label for="day_{{ day.value }}_end">Do</label>
+                                    <input
+                                        type="time"
+                                        class="form-control availability-time"
+                                        name="day_{{ day.value }}_end"
+                                        id="day_{{ day.value }}_end"
+                                        value="{{ day.end_time }}"
+                                    >
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="mt-4">
+                            <button type="submit" class="btn btn-primary tm-btn">
+                                Zapisz dostępność
+                            </button>
+
+                            <a href="{% url 'profile' %}" class="btn btn-secondary tm-btn ml-2">
+                                Anuluj
+                            </a>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'bookings/bookings.js' %}"></script>
+{% endblock %}

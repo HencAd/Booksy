@@ -32,8 +32,8 @@
                         </a>
 
                         {% if user.is_authenticated %}
-                            <a href="#" class="btn btn-primary tm-btn ml-2">
-                                Zarezerwuj
+                            <a href="{% url 'service_availability' service.pk %}" class="btn btn-primary tm-btn ml-2">
+                                Sprawdź dostępne terminy
                             </a>
                         {% else %}
                             <a href="{% url 'login' %}" class="btn btn-primary tm-btn ml-2">

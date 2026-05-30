@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Moje rezerwacje{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="tm-content-box p-4 bg-white">
+
+            <h2 class="text-uppercase mb-4">Moje rezerwacje</h2>
+
+            {% for appointment in appointments %}
+                <div class="appointment-card appointment-status-{{ appointment.status }}">
+                    <h4>{{ appointment.service.name }}</h4>
+
+                    <p class="tm-text-highlight">
+                        {{ appointment.provider.business_name }}
+                    </p>
+
+                    <p>
+                        <strong>Termin:</strong>
+                        {{ appointment.start_time|date:"d.m.Y H:i" }}
+                        -
+                        {{ appointment.end_time|date:"H:i" }}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        {{ appointment.get_status_display }}
+                    </p>
+
+                    {% if appointment.status == "pending" %}
+                        <div class="mt-3">
+                            <a href="#" class="btn btn-secondary tm-btn">
+                                Zmień termin
+                            </a>
+
+                            <button type="button"
+                                    class="btn btn-danger tm-btn ml-2"
+                                    data-toggle="modal"
+                                    data-target="#cancelAppointmentModal{{ appointment.pk }}">
+                                Odwołaj wizytę
+                            </button>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="modal fade"
+                     id="cancelAppointmentModal{{ appointment.pk }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="cancelAppointmentModalLabel{{ appointment.pk }}"
+                     aria-hidden="true">
+
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cancelAppointmentModalLabel{{ appointment.pk }}">
+                                    Anulować rezerwację?
+                                </h5>
+
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div class="modal-body">
+                                <p>
+                                    Czy na pewno chcesz anulować rezerwację?
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Usługa:</strong> {{ appointment.service.name }}
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Termin:</strong>
+                                    {{ appointment.start_time|date:"d.m.Y H:i" }}
+                                    -
+                                    {{ appointment.end_time|date:"H:i" }}
+                                </p>
+
+                                <p class="text-muted mt-3 mb-0">
+                                    Rezerwacja pozostanie widoczna w historii jako anulowana.
+                                </p>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    Nie, wróć
+                                </button>
+
+                                <form method="post"
+                                      action="{% url 'appointment_cancel' appointment.pk %}"
+                                      style="display: inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">
+                                        Tak, odwołaj
+                                    </button>
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            {% empty %}
+                <p>Nie masz jeszcze żadnych rezerwacji.</p>
+            {% endfor %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

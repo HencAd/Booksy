@@ -34,11 +34,7 @@ INSTALLED_APPS = [
     "django_extensions",
 ]
 
-INSTALLED_EXTENSIONS = [
-    "accounts",
-    "pages",
-    "services",
-]
+INSTALLED_EXTENSIONS = ["accounts", "pages", "services", "bookings"]
 
 INSTALLED_APPS += INSTALLED_EXTENSIONS
 
@@ -114,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
+LANGUAGE_CODE = "pl-pl"
 
 TIME_ZONE = "UTC"
 

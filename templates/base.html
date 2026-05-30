@@ -53,9 +53,21 @@
                                         <a class="nav-link" href="{% url 'profile' %}">Profil</a>
                                     </li>
 
+                                    {% if user.client %}
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{% url 'my_appointments' %}">Moje rezerwacje</a>
+                                        </li>
+                                    {% endif %}
+
                                     {% if user.provider %}
                                         <li class="nav-item">
                                             <a class="nav-link" href="{% url 'my_service_list' %}">Moje usługi</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% if user.provider %}
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="{% url 'my_availability' %}">Moja dostępność</a>
                                         </li>
                                     {% endif %}
 

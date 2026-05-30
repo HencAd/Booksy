@@ -7,6 +7,7 @@ urlpatterns = [
     path("", include("accounts.urls")),
     path("", include("pages.urls")),
     path("", include("services.urls")),
+    path("", include("bookings.urls")),
 ]
 
 if settings.DEBUG:
