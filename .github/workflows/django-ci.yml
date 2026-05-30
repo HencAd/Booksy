@@ -1,0 +1,63 @@
+name: Django CI
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  PYTHON_VERSION: '3.12'
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    name: Code Quality & Linting
+
+    env:
+      DJANGO_SECRET_KEY: test-secret-key
+      DEBUG: "True"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          else
+            echo "plik requirements.txt nie istnieje"
+          fi
+
+          pip install ruff mypy bandit safety
+
+      - name: Run Django checks
+        run: |
+          python manage.py check
+
+      - name: Check migrations
+        run: |
+          python manage.py makemigrations --check --dry-run
+
+      - name: Run tests
+        run: |
+          python manage.py test
+
+      - name: Run Ruff
+        run: ruff check .
+
+      - name: Run bandit
+        run:  bandit -r . -x .venv,venv,tests,migrations
+
+      - name: Run mypy
+        run: mypy .
+        continue-on-error: true
+
+      - name: Check dependencies security
+        run: safety check
+        continue-on-error: true
