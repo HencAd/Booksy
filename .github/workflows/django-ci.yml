@@ -14,7 +14,7 @@ jobs:
     name: Code Quality & Linting
 
     env:
-      DJANGO_SECRET_KEY: test-secret-key
+      SECRET_KEY: test-secret-key
       DEBUG: "True"
 
     steps:
