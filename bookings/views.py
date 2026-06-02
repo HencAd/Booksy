@@ -193,7 +193,11 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             messages.error(request, "Nie wybrano godziny wizyty.")
             return redirect("service_availability", pk=service.pk)
 
-        start_time = datetime.fromisoformat(start_time_raw)
+        try:
+            start_time = datetime.fromisoformat(start_time_raw)
+        except ValueError:
+            messages.error(request, "Nieprawidłowy format daty.")
+            return redirect("service_availability", pk=service.pk)
 
         if timezone.is_naive(start_time):
             start_time = timezone.make_aware(start_time)
@@ -253,6 +257,116 @@ class ClientAppointmentListView(LoginRequiredMixin, ListView):
             )
             .order_by("status_order", "start_time")
         )
+
+
+class AppointmentRescheduleView(LoginRequiredMixin, View):
+    template_name = "bookings/reschedule_appointments.html"
+
+    def get_appointment(self, request, pk):
+        if not hasattr(request.user, "client"):
+            return None
+
+        return get_object_or_404(
+            Appointment.objects.select_related("service", "provider", "client"),
+            pk=pk,
+            client=request.user.client,
+        )
+
+    def get(self, request, *args, **kwargs):
+
+        if not hasattr(request.user, "client"):
+            messages.error(request, "Tylko klient może zarządzać swoją rezerwacją.")
+            return redirect("home")
+
+        appointment = self.get_appointment(request, kwargs["pk"])
+
+        if appointment.status != Appointment.Status.PENDING:
+            messages.error(request, "Możesz zmienić termin tylko aktywnej rezerwacji.")
+            return redirect("my_appointments")
+
+        service = appointment.service
+
+        week = int(request.GET.get("week", 0))
+
+        if week < 0:
+            week = 0
+
+        if week > 1:
+            week = 1
+
+        days = generate_available_slots(
+            service,
+            week=week,
+            exclude_appointment=appointment,
+        )
+
+        return render(
+            request,
+            self.template_name,
+            {
+                "appointment": appointment,
+                "service": service,
+                "days": days,
+                "week": week,
+                "previous_week": week - 1,
+                "next_week": week + 1,
+            },
+        )
+
+    def post(self, request, *args, **kwargs):
+
+        if not hasattr(request.user, "client"):
+            messages.error(request, "Tylko klient może zarezerwować wizytę.")
+            return redirect("home")
+
+        appointment = self.get_appointment(request, kwargs["pk"])
+
+        if appointment.status != Appointment.Status.PENDING:
+            messages.error(request, "Możesz zmienić termin tylko aktywnej rezerwacji.")
+            return redirect("my_appointments")
+
+        service = appointment.service
+        new_start_time_raw = request.POST.get("start_time")
+
+        if not new_start_time_raw:
+            messages.error(request, "Nie wybrano godziny wizyty.")
+            return redirect("appointment_reschedule", pk=appointment.pk)
+
+        try:
+            new_start_time = datetime.fromisoformat(new_start_time_raw)
+        except ValueError:
+            messages.error(request, "Nieprawidłowy format daty.")
+            return redirect("appointment_reschedule", pk=appointment.pk)
+
+        if timezone.is_naive(new_start_time):
+            new_start_time = timezone.make_aware(new_start_time)
+
+        new_end_time = new_start_time + timedelta(minutes=service.duration_minutes)
+
+        has_collision = (
+            Appointment.objects.filter(
+                provider=appointment.provider,
+                status__in=[
+                    Appointment.Status.PENDING,
+                ],
+                start_time__lt=new_end_time,
+                end_time__gt=new_start_time,
+            )
+            .exclude(pk=appointment.pk)
+            .exists()
+        )
+
+        if has_collision:
+            messages.error(request, "Ten termin nie jest już dostępny.")
+            return redirect("appointment_reschedule", pk=appointment.pk)
+
+        appointment.start_time = new_start_time
+        appointment.end_time = new_end_time
+        appointment.status = Appointment.Status.PENDING
+        appointment.save(update_fields=["start_time", "end_time", "status"])
+
+        messages.success(request, "Termin rezerwacji został zmieniony.")
+        return redirect("my_appointments")
 
 
 class AppointmentCancelView(LoginRequiredMixin, View):

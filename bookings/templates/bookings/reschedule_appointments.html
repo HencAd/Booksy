@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Zmień termin{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="tm-content-box p-4 bg-white">
+
+            <div class="mb-4">
+                <h2 class="text-uppercase mb-3">Zmień termin rezerwacji</h2>
+
+                <h4>{{ service.name }}</h4>
+                <p class="tm-text-highlight mb-2">{{ service.provider.business_name }}</p>
+                <p class="mb-1"><strong>Cena:</strong> {{ service.price }} zł</p>
+                <p class="mb-1"><strong>Czas trwania:</strong> {{ service.duration_minutes }} min</p>
+
+                <p class="mt-3 mb-0">
+                    <strong>Obecny termin:</strong>
+                    {{ appointment.start_time|date:"d.m.Y H:i" }}
+                </p>
+            </div>
+
+            <div class="booking-calendar">
+
+                <div class="booking-calendar-header">
+                    <div class="booking-arrow-box">
+                        {% if week > 0 %}
+                            <a href="{% url 'appointment_reschedule' appointment.pk %}?week={{ previous_week }}"
+                               class="booking-arrow">‹</a>
+                        {% else %}
+                            <span class="booking-arrow booking-arrow-disabled">‹</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="booking-calendar-title">
+                        Wybierz nowy termin
+                    </div>
+
+                    <div class="booking-arrow-box">
+                        {% if week < 1 %}
+                            <a href="{% url 'appointment_reschedule' appointment.pk %}?week={{ next_week }}"
+                               class="booking-arrow">›</a>
+                        {% else %}
+                            <span class="booking-arrow booking-arrow-disabled">›</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <form method="post" action="{% url 'appointment_reschedule' appointment.pk %}" id="booking-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="start_time" id="selected-start-time">
+
+                    <div class="booking-week-grid">
+                        {% for day in days %}
+                            <div class="booking-day-column">
+                                <div class="booking-day-header">
+                                    <div class="booking-day-name">
+                                        {{ day.date|date:"D"|capfirst }}
+                                    </div>
+                                    <div class="booking-day-date">
+                                        {{ day.date|date:"d M" }}
+                                    </div>
+                                </div>
+
+                                <div class="booking-slots">
+                                    {% if day.slots %}
+                                        {% for slot in day.slots %}
+                                            <button
+                                                type="button"
+                                                class="booking-slot"
+                                                data-start-time="{{ slot.start|date:'c' }}"
+                                                data-display-time="{{ slot.start|date:'d.m.Y H:i' }}"
+                                            >
+                                                {{ slot.start|date:"H:i" }}
+                                            </button>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="booking-empty">-</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="booking-summary mt-4" id="booking-summary" style="display: none;">
+                        <p class="mb-2">
+                            Nowy termin:
+                            <strong id="selected-display-time"></strong>
+                        </p>
+
+                        <button type="submit" class="btn btn-primary tm-btn">
+                            Zmień termin
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+
+            <div class="border-top pt-3 mt-4">
+                <a href="{% url 'my_appointments' %}" class="btn btn-secondary tm-btn">
+                    Wróć do moich rezerwacji
+                </a>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll(".booking-slot").forEach(function (button) {
+        button.addEventListener("click", function () {
+            document.querySelectorAll(".booking-slot").forEach(function (slotButton) {
+                slotButton.classList.remove("booking-slot-selected");
+            });
+
+            button.classList.add("booking-slot-selected");
+
+            const startTime = button.dataset.startTime;
+            const displayTime = button.dataset.displayTime;
+
+            document.getElementById("selected-start-time").value = startTime;
+            document.getElementById("selected-display-time").textContent = displayTime;
+            document.getElementById("booking-summary").style.display = "block";
+        });
+    });
+</script>
+{% endblock %}

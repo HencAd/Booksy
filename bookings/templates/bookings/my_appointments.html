@@ -31,7 +31,7 @@
 
                     {% if appointment.status == "pending" %}
                         <div class="mt-3">
-                            <a href="#" class="btn btn-secondary tm-btn">
+                            <a href="{% url 'appointment_reschedule' appointment.pk %}" class="btn btn-secondary tm-btn">
                                 Zmień termin
                             </a>
 

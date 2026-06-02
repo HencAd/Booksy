@@ -5,7 +5,7 @@ from django.utils import timezone
 from .models import Appointment, ProviderAvailability, ProviderBookingSettings
 
 
-def generate_available_slots(service, week=0):
+def generate_available_slots(service, week=0, exclude_appointment=None):
     provider = service.provider
 
     booking_settings, created = ProviderBookingSettings.objects.get_or_create(
@@ -56,6 +56,9 @@ def generate_available_slots(service, week=0):
                 Appointment.Status.COMPLETED,
             ],
         )
+
+        if exclude_appointment:
+            active_appointments = active_appointments.exclude(pk=exclude_appointment.pk)
 
         current_start = work_start
         now = timezone.now()

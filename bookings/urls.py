@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     AppointmentCancelView,
     AppointmentCreateView,
+    AppointmentRescheduleView,
     ClientAppointmentListView,
     ProviderAvailabilityWeekView,
     ServiceAvailabilityView,
@@ -31,5 +32,10 @@ urlpatterns = [
         "my-appointments/<int:pk>/cancel/",
         AppointmentCancelView.as_view(),
         name="appointment_cancel",
+    ),
+    path(
+        "appointments/<int:pk>/reschedule/",
+        AppointmentRescheduleView.as_view(),
+        name="appointment_reschedule",
     ),
 ]
