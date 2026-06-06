@@ -1,13 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 
 from .forms import ProfileClientForm, ProfileProviderForm, UserForm, UserRegisterForm
 from .models import Client, Provider
 
 
-def register(request):
+def register(request: HttpRequest) -> HttpResponse:
 
     if request.method == "POST":
         form = UserRegisterForm(request.POST)
@@ -39,7 +40,7 @@ def register(request):
 
 
 @login_required
-def profile(request):
+def profile(request: HttpRequest) -> HttpResponse:
     if hasattr(request.user, "client"):
         profile = request.user.client
         profile_type = "client"
@@ -63,7 +64,7 @@ def profile(request):
 
 
 @login_required
-def update_profile(request):
+def update_profile(request: HttpRequest) -> HttpResponse:
     if hasattr(request.user, "client"):
         profile = request.user.client
         ProfileFormClass = ProfileClientForm

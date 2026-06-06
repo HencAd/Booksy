@@ -1,3 +1,5 @@
+from typing import Any
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -24,8 +26,8 @@ class UserRegisterForm(UserCreationForm):
             "password2",
         ]
 
-    def clean(self):
-        cleaned_data = super().clean()
+    def clean(self) -> dict[Any, Any]:
+        cleaned_data: dict[Any, Any] = super().clean()
         account_type = cleaned_data.get("account_type")
         business_name = cleaned_data.get("business_name")
 

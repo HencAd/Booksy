@@ -67,6 +67,12 @@
 
                                     {% if user.provider %}
                                         <li class="nav-item">
+                                            <a class="nav-link" href="{% url 'provider_appointments' %}">Rezerwacje klientów</a>
+                                        </li>
+                                    {% endif %}
+
+                                    {% if user.provider %}
+                                        <li class="nav-item">
                                             <a class="nav-link" href="{% url 'my_availability' %}">Moja dostępność</a>
                                         </li>
                                     {% endif %}

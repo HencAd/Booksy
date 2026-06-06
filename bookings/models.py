@@ -27,7 +27,7 @@ class ProviderAvailability(models.Model):
             )
         ]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.provider} - {self.get_day_of_week_display()} {self.start_time}-{self.end_time}"
 
 
@@ -60,5 +60,5 @@ class ProviderBookingSettings(models.Model):
         choices=SlotInterval.choices, default=SlotInterval.THIRTY
     )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.provider} - slot co {self.slot_interval_minutes} min"

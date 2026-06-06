@@ -5,6 +5,8 @@ from .views import (
     AppointmentCreateView,
     AppointmentRescheduleView,
     ClientAppointmentListView,
+    ProviderAppointmentCancelView,
+    ProviderAppointmentListView,
     ProviderAvailabilityWeekView,
     ServiceAvailabilityView,
 )
@@ -29,9 +31,19 @@ urlpatterns = [
         "my-appointments/", ClientAppointmentListView.as_view(), name="my_appointments"
     ),
     path(
+        "provider/appointments/",
+        ProviderAppointmentListView.as_view(),
+        name="provider_appointments",
+    ),
+    path(
         "my-appointments/<int:pk>/cancel/",
         AppointmentCancelView.as_view(),
         name="appointment_cancel",
+    ),
+    path(
+        "provider/appointments/<int:pk>/cancel/",
+        ProviderAppointmentCancelView.as_view(),
+        name="provider_appointment_cancel",
     ),
     path(
         "appointments/<int:pk>/reschedule/",

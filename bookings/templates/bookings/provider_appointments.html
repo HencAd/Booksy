@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Rezerwacje klientów{% endblock %}
+
+{% block content %}
+<section class="p-5 tm-container-outer tm-bg-gray">
+    <div class="container">
+        <div class="tm-content-box p-4 bg-white">
+
+            <h2 class="text-uppercase mb-4">Rezerwacje klientów</h2>
+
+            {% if appointments %}
+                <div class="table-responsive">
+                    <table class="table table-striped align-middle">
+                        <thead>
+                            <tr>
+                                <th>Usługa</th>
+                                <th>Klient</th>
+                                <th>Termin</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                                <tr>
+                                    <td>{{ appointment.service.name }}</td>
+
+                                    <td>
+                                        {{ appointment.client.user.username }}
+                                    </td>
+
+                                    <td>
+                                        {{ appointment.start_time|date:"d.m.Y H:i" }}
+                                        -
+                                        {{ appointment.end_time|date:"H:i" }}
+                                    </td>
+
+                                    <td>
+                                        {{ appointment.get_status_display }}
+                                    </td>
+                                    <td>
+                                        {% if appointment.status == appointment.Status.PENDING %}
+                                            <form method="post" action="{% url 'provider_appointment_cancel' appointment.pk %}">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-danger btn-sm">
+                                                    Anuluj
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>Nie masz jeszcze żadnych rezerwacji.</p>
+            {% endif %}
+
+        </div>
+    </div>
+</section>
+{% endblock %}

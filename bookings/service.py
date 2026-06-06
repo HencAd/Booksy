@@ -2,10 +2,12 @@ from datetime import datetime, timedelta
 
 from django.utils import timezone
 
-from .models import Appointment, ProviderAvailability, ProviderBookingSettings
+from .models import Appointment, ProviderAvailability, ProviderBookingSettings, Service
 
 
-def generate_available_slots(service, week=0, exclude_appointment=None):
+def generate_available_slots(
+    service: Service, week: int = 0, exclude_appointment: Appointment | None = None
+) -> list[dict[str, list]]:
     provider = service.provider
 
     booking_settings, created = ProviderBookingSettings.objects.get_or_create(

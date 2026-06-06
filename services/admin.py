@@ -16,4 +16,4 @@ class ServiceAdmin(admin.ModelAdmin):
         "updated_at",
     ]
     list_filter = ["provider", "is_active", "price"]
-    search_fields = ["name", "description"]
+    search_fields = ["name", "description", "provider__business_name"]

@@ -1,6 +1,11 @@
+from typing import Any
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
+from django.db.models import Q, QuerySet
+from django.forms import ModelForm
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -15,7 +20,7 @@ class ServiceListView(ListView):
     template_name = "services/service_list.html"
     context_object_name = "services"
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Service]:
         queryset = (
             Service.objects.filter(is_active=True)
             .select_related("provider")
@@ -27,7 +32,11 @@ class ServiceListView(ListView):
         max_price = self.request.GET.get("max_price")
 
         if q:
-            queryset = queryset.filter(name__icontains=q)
+            queryset = queryset.filter(
+                Q(name__icontains=q)
+                | Q(description__icontains=q)
+                | Q(provider__business_name__icontains=q)
+            )
 
         if min_price:
             queryset = queryset.filter(price__gte=min_price)
@@ -43,7 +52,7 @@ class ServiceDetailView(DetailView):
     template_name = "services/service_detail.html"
     context_object_name = "service"
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(is_active=True).select_related("provider")
 
 
@@ -52,7 +61,7 @@ class ProviderServiceListView(LoginRequiredMixin, ProviderRequiredMixin, ListVie
     template_name = "services/my_service_list.html"
     context_object_name = "services"
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(provider=self.request.user.provider).order_by(
             "-created_at"
         )
@@ -63,7 +72,7 @@ class ProviderServiceDetailView(LoginRequiredMixin, ProviderRequiredMixin, Detai
     template_name = "services/my_service_detail.html"
     context_object_name = "service"
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(provider=self.request.user.provider)
 
 
@@ -76,7 +85,7 @@ class ServiceCreateView(
     success_message = "Usługa została dodana."
     success_url = reverse_lazy("my_service_list")
 
-    def form_valid(self, form):
+    def form_valid(self, form: ModelForm) -> HttpResponse:
         form.instance.provider = self.request.user.provider
         return super().form_valid(form)
 
@@ -90,12 +99,12 @@ class ServiceUpdateView(
     success_message = "Usługa została zaktualizowana."
     success_url = reverse_lazy("my_service_list")
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(provider=self.request.user.provider)
 
 
 class ServiceDeactivateView(LoginRequiredMixin, ProviderRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         service = get_object_or_404(
             Service, pk=kwargs["pk"], provider=request.user.provider
         )

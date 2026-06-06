@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+from typing import Any, cast
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction
-from django.db.models import Case, IntegerField, Value, When
-from django.http import HttpResponseForbidden
+from django.db.models import Case, IntegerField, QuerySet, Value, When
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views import View
@@ -20,7 +21,7 @@ from .service import generate_available_slots
 class ProviderAvailabilityWeekView(LoginRequiredMixin, ProviderRequiredMixin, View):
     template_name = "bookings/my_availability_week.html"
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         provider = request.user.provider
 
         booking_settings, created = ProviderBookingSettings.objects.get_or_create(
@@ -63,7 +64,7 @@ class ProviderAvailabilityWeekView(LoginRequiredMixin, ProviderRequiredMixin, Vi
             },
         )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         provider = request.user.provider
         cleaned_days = []
 
@@ -142,7 +143,7 @@ class ProviderAvailabilityWeekView(LoginRequiredMixin, ProviderRequiredMixin, Vi
 class ServiceAvailabilityView(View):
     template_name = "bookings/service_availability.html"
 
-    def get(self, request, *args, **kwargs):
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         service = get_object_or_404(
             Service.objects.select_related("provider"), pk=kwargs["pk"], is_active=True
         )
@@ -176,7 +177,7 @@ class ServiceAvailabilityView(View):
 
 
 class AppointmentCreateView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         service = get_object_or_404(
             Service.objects.select_related("provider"),
             pk=kwargs["pk"],
@@ -236,13 +237,13 @@ class ClientAppointmentListView(LoginRequiredMixin, ListView):
     template_name = "bookings/my_appointments.html"
     context_object_name = "appointments"
 
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "client"):
             return HttpResponseForbidden("Tylko klient ma dostęp do swoich rezerwacji.")
 
         return super().dispatch(request, *args, **kwargs)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[Appointment]:
         return (
             Appointment.objects.filter(client=self.request.user.client)
             .select_related("service", "provider")
@@ -259,20 +260,50 @@ class ClientAppointmentListView(LoginRequiredMixin, ListView):
         )
 
 
+class ProviderAppointmentListView(LoginRequiredMixin, ListView):
+    model = Appointment
+    template_name = "bookings/provider_appointments.html"
+    context_object_name = "appointments"
+
+    def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not hasattr(request.user, "provider"):
+            return HttpResponseForbidden(
+                "Tylko usługodawca ma dostęp do swoich rezerwacji."
+            )
+
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_queryset(self) -> QuerySet[Appointment]:
+        return (
+            Appointment.objects.filter(client=self.request.user.provider)
+            .select_related("service", "client", "client__user")
+            .annotate(
+                status_order=Case(
+                    When(status=Appointment.Status.PENDING, then=Value(1)),
+                    When(status=Appointment.Status.CANCELLED, then=Value(2)),
+                    When(status=Appointment.Status.COMPLETED, then=Value(3)),
+                    default=Value(4),
+                    output_field=IntegerField(),
+                )
+            )
+            .order_by("status_order", "start_time")
+        )
+
+
 class AppointmentRescheduleView(LoginRequiredMixin, View):
     template_name = "bookings/reschedule_appointments.html"
 
-    def get_appointment(self, request, pk):
-        if not hasattr(request.user, "client"):
-            return None
+    def get_appointment(self, request: HttpRequest, pk: int) -> Appointment:
 
-        return get_object_or_404(
+        appointment = get_object_or_404(
             Appointment.objects.select_related("service", "provider", "client"),
             pk=pk,
             client=request.user.client,
         )
 
-    def get(self, request, *args, **kwargs):
+        return cast(Appointment, appointment)
+
+    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
 
         if not hasattr(request.user, "client"):
             messages.error(request, "Tylko klient może zarządzać swoją rezerwacją.")
@@ -313,7 +344,7 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
             },
         )
 
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
 
         if not hasattr(request.user, "client"):
             messages.error(request, "Tylko klient może zarezerwować wizytę.")
@@ -370,7 +401,7 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
 
 
 class AppointmentCancelView(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "client"):
             messages.error(request, "Tylko klient może anulować swoją rezerwację.")
             return redirect("home")
@@ -390,3 +421,26 @@ class AppointmentCancelView(LoginRequiredMixin, View):
 
         messages.success(request, "Rezerwacja została anulowana.")
         return redirect("my_appointments")
+
+
+class ProviderAppointmentCancelView(LoginRequiredMixin, ProviderRequiredMixin, View):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not hasattr(request.user, "provider"):
+            messages.error(request, "Tylko usługodawca może anulować rezerwację.")
+            return redirect("home")
+
+        appointment = get_object_or_404(
+            Appointment,
+            pk=kwargs["pk"],
+            client=request.user.provider,
+        )
+
+        if appointment.status != Appointment.Status.PENDING:
+            messages.error(request, "Możesz anulować tylko aktywną rezerwację.")
+            return redirect("my_appointments")
+
+        appointment.status = Appointment.Status.CANCELLED
+        appointment.save(update_fields=["status", "updated_at"])
+
+        messages.success(request, "Rezerwacja została anulowana.")
+        return redirect("provider_appointments")
