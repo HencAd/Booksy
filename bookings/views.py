@@ -275,7 +275,7 @@ class ProviderAppointmentListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self) -> QuerySet[Appointment]:
         return (
-            Appointment.objects.filter(client=self.request.user.provider)
+            Appointment.objects.filter(provider=self.request.user.provider)
             .select_related("service", "client", "client__user")
             .annotate(
                 status_order=Case(
@@ -432,7 +432,7 @@ class ProviderAppointmentCancelView(LoginRequiredMixin, ProviderRequiredMixin, V
         appointment = get_object_or_404(
             Appointment,
             pk=kwargs["pk"],
-            client=request.user.provider,
+            provider=request.user.provider,
         )
 
         if appointment.status != Appointment.Status.PENDING:
