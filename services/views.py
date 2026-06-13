@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -10,6 +10,8 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+
+from bookings.models import AppointmentOpinion
 
 from .mixins import ProviderRequiredMixin
 from .models import Service
@@ -55,6 +57,17 @@ class ServiceDetailView(DetailView):
     def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(is_active=True).select_related("provider")
 
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = cast(dict[str, Any], super().get_context_data(**kwargs))
+
+        context["opinions"] = (
+            AppointmentOpinion.objects.filter(appointment__service=self.object)
+            .select_related("client", "client__user", "appointment")
+            .order_by("-created_at")
+        )
+
+        return context
+
 
 class ProviderServiceListView(LoginRequiredMixin, ProviderRequiredMixin, ListView):
     model = Service
@@ -74,6 +87,17 @@ class ProviderServiceDetailView(LoginRequiredMixin, ProviderRequiredMixin, Detai
 
     def get_queryset(self) -> QuerySet[Service]:
         return Service.objects.filter(provider=self.request.user.provider)
+
+    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        context = cast(dict[str, Any], super().get_context_data(**kwargs))
+
+        context["opinions"] = (
+            AppointmentOpinion.objects.filter(appointment__service=self.object)
+            .select_related("client", "client__user", "appointment")
+            .order_by("-created_at")
+        )
+
+        return context
 
 
 class ServiceCreateView(

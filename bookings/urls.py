@@ -3,11 +3,13 @@ from django.urls import path
 from .views import (
     AppointmentCancelView,
     AppointmentCreateView,
+    AppointmentOpinionCreate,
     AppointmentRescheduleView,
     ClientAppointmentListView,
     ProviderAppointmentCancelView,
     ProviderAppointmentListView,
     ProviderAvailabilityWeekView,
+    ProviderOpinionReplyView,
     ServiceAvailabilityView,
 )
 
@@ -49,5 +51,15 @@ urlpatterns = [
         "appointments/<int:pk>/reschedule/",
         AppointmentRescheduleView.as_view(),
         name="appointment_reschedule",
+    ),
+    path(
+        "appointments/<int:pk>/opinion/",
+        AppointmentOpinionCreate.as_view(),
+        name="appointment_opinion",
+    ),
+    path(
+        "provider/opinions/<int:pk>/reply/",
+        ProviderOpinionReplyView.as_view(),
+        name="provider_opinion_reply",
     ),
 ]

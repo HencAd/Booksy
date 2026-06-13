@@ -14,7 +14,12 @@ from django.views.generic import ListView
 from services.mixins import ProviderRequiredMixin
 from services.models import Service
 
-from .models import Appointment, ProviderAvailability, ProviderBookingSettings
+from .models import (
+    Appointment,
+    AppointmentOpinion,
+    ProviderAvailability,
+    ProviderBookingSettings,
+)
 from .service import generate_available_slots
 
 
@@ -246,7 +251,7 @@ class ClientAppointmentListView(LoginRequiredMixin, ListView):
     def get_queryset(self) -> QuerySet[Appointment]:
         return (
             Appointment.objects.filter(client=self.request.user.client)
-            .select_related("service", "provider")
+            .select_related("service", "provider", "opinion")
             .annotate(
                 status_order=Case(
                     When(status=Appointment.Status.PENDING, then=Value(1)),
@@ -444,3 +449,80 @@ class ProviderAppointmentCancelView(LoginRequiredMixin, ProviderRequiredMixin, V
 
         messages.success(request, "Rezerwacja została anulowana.")
         return redirect("provider_appointments")
+
+
+class AppointmentOpinionCreate(LoginRequiredMixin, View):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        if not hasattr(request.user, "client"):
+            messages.error(request, "Tylko klient może ocenić wizytę.")
+            return redirect("home")
+
+        appointment = get_object_or_404(
+            Appointment,
+            pk=kwargs["pk"],
+            client=request.user.client,
+        )
+
+        if appointment.status != Appointment.Status.COMPLETED:
+            messages.error(request, "Możesz ocenić tylko zrealizowaną usługę.")
+            return redirect("my_appointments")
+
+        if hasattr(appointment, "opinion"):
+            messages.error(request, "Ta wizyta została już oceniona.")
+            return redirect("my_appointments")
+
+        opinion = request.POST.get("opinion")
+        stars_raw = request.POST.get("stars")
+
+        if not stars_raw:
+            messages.error(request, "Uzupełnij ocenę")
+            return redirect("my_appointments")
+
+        try:
+            stars = int(stars_raw)
+        except ValueError:
+            messages.error(request, "Nieprawidłowa ocena.")
+            return redirect("my_appointments")
+
+        if stars < 1 or stars > 5:
+            messages.error(request, "Ocena musi być w zakresie od 1 do 5.")
+            return redirect("my_appointments")
+
+        AppointmentOpinion.objects.create(
+            appointment=appointment,
+            client=request.user.client,
+            opinion=opinion,
+            stars=stars,
+        )
+
+        messages.success(request, "Dziękujemy za wystawienie opinii.")
+        return redirect("my_appointments")
+
+
+class ProviderOpinionReplyView(LoginRequiredMixin, ProviderRequiredMixin, View):
+    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        opinion = get_object_or_404(
+            AppointmentOpinion,
+            pk=kwargs["pk"],
+            appointment__provider=request.user.provider,
+        )
+
+        if opinion.provider_response:
+            messages.error(request, "Odpowiedź została już dodana.")
+            return redirect(
+                "provider_service_detail", pk=opinion.appointment.service.pk
+            )
+
+        response = request.POST.get("provider_response", "").strip()
+
+        if not response:
+            messages.error(request, "Treść odpowiedzi nie może być pusta.")
+            return redirect(
+                "provider_service_detail", pk=opinion.appointment.service.pk
+            )
+
+        opinion.provider_response = response
+        opinion.save(update_fields=["provider_response", "updated_at"])
+
+        messages.success(request, "Odpowiedź została dodana.")
+        return redirect("my_service_detail", pk=opinion.appointment.service.pk)

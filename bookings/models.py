@@ -1,3 +1,4 @@
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 from accounts.models import Client, Provider
@@ -44,6 +45,25 @@ class Appointment(models.Model):
     end_time = models.DateTimeField()
     status = models.CharField(
         max_length=20, choices=Status.choices, default=Status.PENDING
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class AppointmentOpinion(models.Model):
+    appointment = models.OneToOneField(
+        Appointment,
+        on_delete=models.CASCADE,
+        related_name="opinion",
+    )
+    client = models.ForeignKey(Client, on_delete=models.CASCADE)
+    opinion = models.TextField(blank=True)
+    provider_response = models.TextField(blank=True)
+    stars = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(5),
+        ]
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

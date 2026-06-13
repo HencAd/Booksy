@@ -9,7 +9,6 @@ from .models import Client, Provider
 
 
 def register(request: HttpRequest) -> HttpResponse:
-
     if request.method == "POST":
         form = UserRegisterForm(request.POST)
 

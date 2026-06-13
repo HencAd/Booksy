@@ -51,6 +51,121 @@
                 </div>
             </div>
         </div>
+        <div class="row mt-4">
+        <div class="col-md-8 mx-auto">
+            <div class="tm-content-box p-4 bg-white">
+
+                <h2 class="text-uppercase mb-4">Opinie</h2>
+
+                {% for opinion in opinions %}
+                    <div class="tm-recommended-place mb-3">
+                        <div class="tm-recommended-description-box">
+
+                            <h5 class="tm-recommended-title">
+                                {{ opinion.client.user.username }}
+                            </h5>
+
+                            <p class="mb-1">
+                                <strong>Ocena:</strong>
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= opinion.stars %}
+                                        ★
+                                    {% else %}
+                                        ☆
+                                    {% endif %}
+                                {% endfor %}
+                                <span>({{ opinion.stars }}/5)</span>
+                            </p>
+
+                            <p class="tm-text-gray">
+                                {{ opinion.opinion|default:"Brak komentarza" }}
+                            </p>
+
+                            {% if opinion.provider_response %}
+                                <div class="mt-3 p-3 bg-light">
+                                    <strong>Odpowiedź usługodawcy:</strong>
+                                    <p class="mb-0">{{ opinion.provider_response }}</p>
+                                </div>
+                            {% else %}
+                                <button type="button"
+                                    class="btn btn-secondary tm-btn ml-2"
+                                    data-toggle="modal"
+                                    data-target="#createAnswerOpinionAppointmentModal{{ opinion.pk }}">
+                                    Odpowiedz
+                                </button>
+
+                                <div class="modal fade"
+                                     id="createAnswerOpinionAppointmentModal{{ opinion.pk }}"
+                                     tabindex="-1"
+                                     role="dialog"
+                                     aria-labelledby="createAnswerOpinionAppointmentModalLabel{{ opinion.pk }}"
+                                     aria-hidden="true">
+
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+
+                                            <form method="post" action="{% url 'provider_opinion_reply' opinion.pk %}">
+                                                {% csrf_token %}
+
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="createAnswerOpinionAppointmentModalLabel{{ opinion.pk }}">
+                                                    Odpowiedz na ocenę
+                                                </h5>
+
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <p class="mb-1">
+                                                    <strong>Klient:</strong> {{ opinion.client.user.username }}
+                                                </p>
+
+                                                <p class="mb-1">
+                                                    <strong>Komentarz:</strong>
+                                                    {{ opinion.opinion }}
+                                                </p>
+
+                                                <div class="form-group">
+                                                    <label for="providerResponse{{ opinion.pk }}">Odpowiedź</label>
+                                                    <textarea
+                                                        name="provider_response"
+                                                        id="providerResponse{{ opinion.pk }}"
+                                                        class="form-control"
+                                                        rows="4"
+                                                        required
+                                                    ></textarea>
+                                                </div>
+
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                                    Nie, wróć
+                                                </button>
+
+                                                <button type="submit" class="btn btn-danger">
+                                                    Wyślij
+                                                </button>
+                                            </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <p>Brak komentarzy.</p>
+                {% endfor %}
+
+            </div>
+        </div>
+
+    </div>
     </div>
 </section>
 {% endblock %}

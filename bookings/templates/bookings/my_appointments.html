@@ -43,6 +43,51 @@
                             </button>
                         </div>
                     {% endif %}
+                    {% if appointment.status == "completed" %}
+                        {% if appointment.opinion %}
+                            <div class="mt-3 p-3 bg-light border rounded">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <strong>Twoja opinia</strong>
+
+                                    <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                        Opinia wystawiona
+                                    </button>
+                                </div>
+
+                                <p class="mb-1">
+                                    <strong>Ocena:</strong>
+                                    {% for i in "12345" %}
+                                        {% if forloop.counter <= appointment.opinion.stars %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span>({{ appointment.opinion.stars }}/5)</span>
+                                </p>
+
+                                <p class="mb-2">
+                                    {{ appointment.opinion.opinion }}
+                                </p>
+
+                                {% if appointment.opinion.provider_response %}
+                                    <div class="mt-2 p-2 bg-white border rounded">
+                                        <strong>Odpowiedź usługodawcy:</strong>
+                                        <p class="mb-0">{{ appointment.opinion.provider_response }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="mt-3">
+                                <button type="button"
+                                        class="btn btn-primary tm-btn"
+                                        data-toggle="modal"
+                                        data-target="#createOpinionAppointmentModal{{ appointment.pk }}">
+                                    Oceń wizytę
+                                </button>
+                            </div>
+                        {% endif %}
+                    {% endif %}
                 </div>
 
                 <div class="modal fade"
@@ -104,6 +149,81 @@
                         </div>
                     </div>
                 </div>
+                {% if appointment.status == "completed" and not appointment.opinion %}
+                <div class="modal fade"
+                     id="createOpinionAppointmentModal{{ appointment.pk }}"
+                     tabindex="-1"
+                     role="dialog"
+                     aria-labelledby="createOpinionAppointmentModalLabel{{ appointment.pk }}"
+                     aria-hidden="true">
+
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+
+                            <form method="post" action="{% url 'appointment_opinion' appointment.pk %}">
+                                {% csrf_token %}
+
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="createOpinionAppointmentModalLabel{{ appointment.pk }}">
+                                    Oceń wizytę
+                                </h5>
+
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Zamknij">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+
+                            <div class="modal-body">
+
+                                <p class="mb-1">
+                                    <strong>Usługa:</strong> {{ appointment.service.name }}
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Termin:</strong>
+                                    {{ appointment.start_time|date:"d.m.Y H:i" }}
+                                    -
+                                    {{ appointment.end_time|date:"H:i" }}
+                                </p>
+                                <div class="form-group mt-3">
+                                    <label for="stars{{ appointment.pk }}">Ocena</label>
+                                    <select name="stars" id="stars{{ appointment.pk }}" class="form-control" style="height: max-content" required>
+                                        <option value="">Wybierz ocenę</option>
+                                        <option value="5">★★★★★ — 5</option>
+                                        <option value="4">★★★★☆ — 4</option>
+                                        <option value="3">★★★☆☆ — 3</option>
+                                        <option value="2">★★☆☆☆ — 2</option>
+                                        <option value="1">★☆☆☆☆ — 1</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="opinion{{ appointment.pk }}">Komentarz</label>
+                                    <textarea
+                                        name="opinion"
+                                        id="opinion{{ appointment.pk }}"
+                                        class="form-control"
+                                        rows="4"
+                                        required
+                                    ></textarea>
+                                </div>
+
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    Nie, wróć
+                                </button>
+
+                                <button type="submit" class="btn btn-danger">
+                                    Wyślij opinie
+                                </button>
+                            </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
 
             {% empty %}
                 <p>Nie masz jeszcze żadnych rezerwacji.</p>
