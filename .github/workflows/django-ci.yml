@@ -13,9 +13,28 @@ jobs:
     runs-on: ubuntu-latest
     name: Code Quality & Linting
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: booking_db
+          POSTGRES_USER: booking_user
+          POSTGRES_PASSWORD: booking_pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U booking_user -d booking_db"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=5
     env:
       SECRET_KEY: test-secret-key
       DEBUG: "True"
+      POSTGRES_DB: booking_db
+      POSTGRES_USER: booking_user
+      POSTGRES_PASSWORD: booking_pass
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
 
     steps:
       - name: Checkout repository
@@ -61,3 +80,6 @@ jobs:
       - name: Check dependencies security
         run: safety check
         continue-on-error: true
+
+      - name: Build Docker image
+        run: docker build -t django-booking-app .
