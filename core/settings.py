@@ -32,11 +32,13 @@ INSTALLED_APPS = [
     "debug_toolbar",
     "django_filters",
     "django_extensions",
+    "django_celery_beat",
 ]
 
 INSTALLED_EXTENSIONS = ["accounts", "pages", "services", "bookings"]
 
 INSTALLED_APPS += INSTALLED_EXTENSIONS
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -145,3 +147,22 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # EMAIL_HOST_USER = login
 # EMAIL_HOST_PASSWORD = hasło / token aplikacyjny
 # DEFAULT_FROM_EMAIL = adres nadawcy
+
+
+# === Celery ===
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+
+# Serializacja – JSON jest bezpieczniejszy niż pickle
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+
+# Strefa czasowa – zgodna z TIME_ZONE Django
+CELERY_TIMEZONE = "Europe/Warsaw"
+
+# Śledzenie statusu tasku (PENDING → STARTED → SUCCESS/FAILURE)
+CELERY_TASK_TRACK_STARTED = True
+
+# Jak długo przechowywać wyniki (w sekundach) – domyślnie 24h
+CELERY_RESULT_EXPIRES = 3600 * 24

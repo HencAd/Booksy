@@ -4,28 +4,72 @@ services:
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
-    environment:
-      SECRET_KEY: dev-secret-key
-      DEBUG: "True"
-      POSTGRES_DB: booking_db
-      POSTGRES_USER: booking_user
-      POSTGRES_PASSWORD: booking_pass
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
     volumes:
       - .:/app
     networks:
       - backend
 
+  redis:
+    image: redis:8.8-alpine
+    networks:
+      - backend
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  celery:
+    build: .
+    command: celery -A core worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  celery-beat:
+    build: .
+    command: celery -A core beat -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - backend
+
+  dashboard:
+    build: .
+    command: celery -A core.celery flower --port=5555 --broker=redis://redis:6379/0
+    ports:
+      - 5555:5555
+    env_file:
+      - .env
+    depends_on:
+      - web
+      - redis
+      - celery
+    networks:
+      - backend
   db:
     image: postgres:16
     environment:
-      POSTGRES_DB: booking_db
-      POSTGRES_USER: booking_user
-      POSTGRES_PASSWORD: booking_pass
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
