@@ -3,7 +3,6 @@ from typing import Any, cast
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db import transaction
 from django.db.models import Case, IntegerField, QuerySet, Value, When
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,138 +10,10 @@ from django.utils import timezone
 from django.views import View
 from django.views.generic import ListView
 
+from bookings.models import Appointment
+from bookings.service import generate_available_slots
 from services.mixins import ProviderRequiredMixin
 from services.models import Service
-
-from .models import (
-    Appointment,
-    AppointmentOpinion,
-    ProviderAvailability,
-    ProviderBookingSettings,
-)
-from .service import generate_available_slots
-
-
-class ProviderAvailabilityWeekView(LoginRequiredMixin, ProviderRequiredMixin, View):
-    template_name = "bookings/my_availability_week.html"
-
-    def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        provider = request.user.provider
-
-        booking_settings, created = ProviderBookingSettings.objects.get_or_create(
-            provider=provider
-        )
-
-        existing_availabilities = ProviderAvailability.objects.filter(provider=provider)
-
-        availability_by_day = {
-            availability.day_of_week: availability
-            for availability in existing_availabilities
-        }
-
-        days = []
-
-        for day_value, day_label in ProviderAvailability.DayOfWeek.choices:
-            availability = availability_by_day.get(day_value)
-
-            days.append(
-                {
-                    "value": day_value,
-                    "label": day_label,
-                    "is_enabled": availability is not None,
-                    "start_time": availability.start_time.strftime("%H:%M")
-                    if availability
-                    else "",
-                    "end_time": availability.end_time.strftime("%H:%M")
-                    if availability
-                    else "",
-                }
-            )
-
-        return render(
-            request,
-            self.template_name,
-            {
-                "days": days,
-                "booking_settings": booking_settings,
-                "slot_interval_choices": ProviderBookingSettings.SlotInterval.choices,
-            },
-        )
-
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        provider = request.user.provider
-        cleaned_days = []
-
-        slot_interval_minutes = request.POST.get("slot_interval_minutes")
-
-        allowed_intervals = [
-            str(choice[0]) for choice in ProviderBookingSettings.SlotInterval.choices
-        ]
-
-        if slot_interval_minutes not in allowed_intervals:
-            messages.error(request, "Niepoprawny interwał slotów.")
-            return redirect("my_availability")
-
-        for day_value, day_label in ProviderAvailability.DayOfWeek.choices:
-            is_enabled = request.POST.get(f"day_{day_value}_enabled")
-            start_time = request.POST.get(f"day_{day_value}_start")
-            end_time = request.POST.get(f"day_{day_value}_end")
-
-            if is_enabled:
-                if not start_time or not end_time:
-                    messages.error(
-                        request, f"Uzupełnij godziny pracy dla dnia: {day_label}."
-                    )
-                    return redirect("my_availability")
-
-                if start_time >= end_time:
-                    messages.error(
-                        request,
-                        f"Godzina rozpoczęcia musi być wcześniejsza niż zakończenia: {day_label}.",
-                    )
-                    return redirect("my_availability")
-
-            cleaned_days.append(
-                {
-                    "day_value": day_value,
-                    "is_enabled": is_enabled,
-                    "start_time": start_time,
-                    "end_time": end_time,
-                }
-            )
-
-        with transaction.atomic():
-            booking_settings, created = ProviderBookingSettings.objects.get_or_create(
-                provider=provider
-            )
-            booking_settings.slot_interval_minutes = slot_interval_minutes
-            booking_settings.save(update_fields=["slot_interval_minutes"])
-
-            for day in cleaned_days:
-                existing_availability = ProviderAvailability.objects.filter(
-                    provider=provider, day_of_week=day["day_value"]
-                ).first()
-
-                if day["is_enabled"]:
-                    if existing_availability:
-                        existing_availability.start_time = day["start_time"]
-                        existing_availability.end_time = day["end_time"]
-                        existing_availability.save(
-                            update_fields=["start_time", "end_time"]
-                        )
-                    else:
-                        ProviderAvailability.objects.create(
-                            provider=provider,
-                            day_of_week=day["day_value"],
-                            start_time=day["start_time"],
-                            end_time=day["end_time"],
-                        )
-                else:
-                    if existing_availability:
-                        existing_availability.delete()
-
-        messages.success(request, "Dostępność została zaktualizowana.")
-        return redirect("my_availability")
 
 
 class ServiceAvailabilityView(View):
@@ -190,7 +61,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
         )
 
         if not hasattr(request.user, "client"):
-            messages.error(request, "Tylko klient może zarezerwować wizytę.")
+            messages.error(request, "Tylko klient moĹĽe zarezerwowaÄ‡ wizytÄ™.")
             return redirect("service_availability", pk=service.pk)
 
         start_time_raw = request.POST.get("start_time")
@@ -202,7 +73,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
         try:
             start_time = datetime.fromisoformat(start_time_raw)
         except ValueError:
-            messages.error(request, "Nieprawidłowy format daty.")
+            messages.error(request, "NieprawidĹ‚owy format daty.")
             return redirect("service_availability", pk=service.pk)
 
         if timezone.is_naive(start_time):
@@ -221,7 +92,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
         ).exists()
 
         if has_collision:
-            messages.error(request, "Ten termin nie jest już dostępny.")
+            messages.error(request, "Ten termin nie jest juĹĽ dostÄ™pny.")
             return redirect("service_availability", pk=service.pk)
 
         Appointment.objects.create(
@@ -233,7 +104,7 @@ class AppointmentCreateView(LoginRequiredMixin, View):
             status=Appointment.Status.PENDING,
         )
 
-        messages.success(request, "Rezerwacja została utworzona.")
+        messages.success(request, "Rezerwacja zostaĹ‚a utworzona.")
         return redirect("service_detail", pk=service.pk)
 
 
@@ -244,7 +115,9 @@ class ClientAppointmentListView(LoginRequiredMixin, ListView):
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "client"):
-            return HttpResponseForbidden("Tylko klient ma dostęp do swoich rezerwacji.")
+            return HttpResponseForbidden(
+                "Tylko klient ma dostÄ™p do swoich rezerwacji."
+            )
 
         return super().dispatch(request, *args, **kwargs)
 
@@ -273,7 +146,7 @@ class ProviderAppointmentListView(LoginRequiredMixin, ListView):
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "provider"):
             return HttpResponseForbidden(
-                "Tylko usługodawca ma dostęp do swoich rezerwacji."
+                "Tylko usĹ‚ugodawca ma dostÄ™p do swoich rezerwacji."
             )
 
         return super().dispatch(request, *args, **kwargs)
@@ -311,13 +184,17 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
     def get(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
 
         if not hasattr(request.user, "client"):
-            messages.error(request, "Tylko klient może zarządzać swoją rezerwacją.")
+            messages.error(
+                request, "Tylko klient moĹĽe zarzÄ…dzaÄ‡ swojÄ… rezerwacjÄ…."
+            )
             return redirect("home")
 
         appointment = self.get_appointment(request, kwargs["pk"])
 
         if appointment.status != Appointment.Status.PENDING:
-            messages.error(request, "Możesz zmienić termin tylko aktywnej rezerwacji.")
+            messages.error(
+                request, "MoĹĽesz zmieniÄ‡ termin tylko aktywnej rezerwacji."
+            )
             return redirect("my_appointments")
 
         service = appointment.service
@@ -352,13 +229,15 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
 
         if not hasattr(request.user, "client"):
-            messages.error(request, "Tylko klient może zarezerwować wizytę.")
+            messages.error(request, "Tylko klient moĹĽe zarezerwowaÄ‡ wizytÄ™.")
             return redirect("home")
 
         appointment = self.get_appointment(request, kwargs["pk"])
 
         if appointment.status != Appointment.Status.PENDING:
-            messages.error(request, "Możesz zmienić termin tylko aktywnej rezerwacji.")
+            messages.error(
+                request, "MoĹĽesz zmieniÄ‡ termin tylko aktywnej rezerwacji."
+            )
             return redirect("my_appointments")
 
         service = appointment.service
@@ -371,7 +250,7 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
         try:
             new_start_time = datetime.fromisoformat(new_start_time_raw)
         except ValueError:
-            messages.error(request, "Nieprawidłowy format daty.")
+            messages.error(request, "NieprawidĹ‚owy format daty.")
             return redirect("appointment_reschedule", pk=appointment.pk)
 
         if timezone.is_naive(new_start_time):
@@ -393,7 +272,7 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
         )
 
         if has_collision:
-            messages.error(request, "Ten termin nie jest już dostępny.")
+            messages.error(request, "Ten termin nie jest juĹĽ dostÄ™pny.")
             return redirect("appointment_reschedule", pk=appointment.pk)
 
         appointment.start_time = new_start_time
@@ -401,14 +280,14 @@ class AppointmentRescheduleView(LoginRequiredMixin, View):
         appointment.status = Appointment.Status.PENDING
         appointment.save(update_fields=["start_time", "end_time", "status"])
 
-        messages.success(request, "Termin rezerwacji został zmieniony.")
+        messages.success(request, "Termin rezerwacji zostaĹ‚ zmieniony.")
         return redirect("my_appointments")
 
 
 class AppointmentCancelView(LoginRequiredMixin, View):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "client"):
-            messages.error(request, "Tylko klient może anulować swoją rezerwację.")
+            messages.error(request, "Tylko klient moĹĽe anulowaÄ‡ swojÄ… rezerwacjÄ™.")
             return redirect("home")
 
         appointment = get_object_or_404(
@@ -418,20 +297,20 @@ class AppointmentCancelView(LoginRequiredMixin, View):
         )
 
         if appointment.status != Appointment.Status.PENDING:
-            messages.error(request, "Możesz anulować tylko aktywną rezerwację.")
+            messages.error(request, "MoĹĽesz anulowaÄ‡ tylko aktywnÄ… rezerwacjÄ™.")
             return redirect("my_appointments")
 
         appointment.status = Appointment.Status.CANCELLED
         appointment.save(update_fields=["status", "updated_at"])
 
-        messages.success(request, "Rezerwacja została anulowana.")
+        messages.success(request, "Rezerwacja zostaĹ‚a anulowana.")
         return redirect("my_appointments")
 
 
 class ProviderAppointmentCancelView(LoginRequiredMixin, ProviderRequiredMixin, View):
     def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         if not hasattr(request.user, "provider"):
-            messages.error(request, "Tylko usługodawca może anulować rezerwację.")
+            messages.error(request, "Tylko usĹ‚ugodawca moĹĽe anulowaÄ‡ rezerwacjÄ™.")
             return redirect("home")
 
         appointment = get_object_or_404(
@@ -441,88 +320,11 @@ class ProviderAppointmentCancelView(LoginRequiredMixin, ProviderRequiredMixin, V
         )
 
         if appointment.status != Appointment.Status.PENDING:
-            messages.error(request, "Możesz anulować tylko aktywną rezerwację.")
+            messages.error(request, "MoĹĽesz anulowaÄ‡ tylko aktywnÄ… rezerwacjÄ™.")
             return redirect("my_appointments")
 
         appointment.status = Appointment.Status.CANCELLED
         appointment.save(update_fields=["status", "updated_at"])
 
-        messages.success(request, "Rezerwacja została anulowana.")
+        messages.success(request, "Rezerwacja zostaĹ‚a anulowana.")
         return redirect("provider_appointments")
-
-
-class AppointmentOpinionCreate(LoginRequiredMixin, View):
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        if not hasattr(request.user, "client"):
-            messages.error(request, "Tylko klient może ocenić wizytę.")
-            return redirect("home")
-
-        appointment = get_object_or_404(
-            Appointment,
-            pk=kwargs["pk"],
-            client=request.user.client,
-        )
-
-        if appointment.status != Appointment.Status.COMPLETED:
-            messages.error(request, "Możesz ocenić tylko zrealizowaną usługę.")
-            return redirect("my_appointments")
-
-        if hasattr(appointment, "opinion"):
-            messages.error(request, "Ta wizyta została już oceniona.")
-            return redirect("my_appointments")
-
-        opinion = request.POST.get("opinion")
-        stars_raw = request.POST.get("stars")
-
-        if not stars_raw:
-            messages.error(request, "Uzupełnij ocenę")
-            return redirect("my_appointments")
-
-        try:
-            stars = int(stars_raw)
-        except ValueError:
-            messages.error(request, "Nieprawidłowa ocena.")
-            return redirect("my_appointments")
-
-        if stars < 1 or stars > 5:
-            messages.error(request, "Ocena musi być w zakresie od 1 do 5.")
-            return redirect("my_appointments")
-
-        AppointmentOpinion.objects.create(
-            appointment=appointment,
-            client=request.user.client,
-            opinion=opinion,
-            stars=stars,
-        )
-
-        messages.success(request, "Dziękujemy za wystawienie opinii.")
-        return redirect("my_appointments")
-
-
-class ProviderOpinionReplyView(LoginRequiredMixin, ProviderRequiredMixin, View):
-    def post(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
-        opinion = get_object_or_404(
-            AppointmentOpinion,
-            pk=kwargs["pk"],
-            appointment__provider=request.user.provider,
-        )
-
-        if opinion.provider_response:
-            messages.error(request, "Odpowiedź została już dodana.")
-            return redirect(
-                "provider_service_detail", pk=opinion.appointment.service.pk
-            )
-
-        response = request.POST.get("provider_response", "").strip()
-
-        if not response:
-            messages.error(request, "Treść odpowiedzi nie może być pusta.")
-            return redirect(
-                "provider_service_detail", pk=opinion.appointment.service.pk
-            )
-
-        opinion.provider_response = response
-        opinion.save(update_fields=["provider_response", "updated_at"])
-
-        messages.success(request, "Odpowiedź została dodana.")
-        return redirect("my_service_detail", pk=opinion.appointment.service.pk)

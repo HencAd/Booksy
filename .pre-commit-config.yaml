@@ -12,6 +12,13 @@ repos:
     -   id: check-added-large-files
         args: ['--maxkb=600']
     -   id: name-tests-test
+        args: ['--pytest-test-first']
+        exclude: |
+            (?x)^(
+                accounts/tests/factories.py |
+                services/tests/factories.py |
+                bookings/tests/factories.py
+            )$
     -   id: check-json
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.0
