@@ -17,7 +17,10 @@ DEBUG = env("DEBUG")
 SECRET_KEY = env("SECRET_KEY")
 
 
-ALLOWED_HOSTS: list[str] = []
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=["localhost", "127.0.0.1"],
+)
 
 INSTALLED_APPS = [
     "rest_framework",
@@ -82,25 +85,25 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("POSTGRES_DB", "booking_db"),
-        "USER": os.environ.get("POSTGRES_USER", "booking_user"),
-        "PASSWORD": os.environ.get("POSTGRES_PASSWORD", "booking_pass"),
-        "HOST": os.environ.get("POSTGRES_HOST", "db"),
-        "PORT": os.environ.get("POSTGRES_PORT", "5432"),
+if env.bool("USE_SQLITE", default=False):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": env("POSTGRES_DB", default="booking_db"),
+            "USER": env("POSTGRES_USER", default="booking_user"),
+            "PASSWORD": env("POSTGRES_PASSWORD", default="booking_pass"),
+            "HOST": env("POSTGRES_HOST", default="db"),
+            "PORT": env("POSTGRES_PORT", default="5432"),
+        }
+    }
 
-
-# if "test" in sys.argv:
-#     DATABASES = {
-#         "default": {
-#             "ENGINE": "django.db.backends.sqlite3",
-#             "NAME": BASE_DIR / "test.sqlite3",
-#         }
-#     }
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -137,7 +140,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = "static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static")
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
