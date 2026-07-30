@@ -10,11 +10,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-env = environ.Env(DEBUG=(bool, False))
+env = environ.Env(
+    DEBUG=(bool, False),
+    USE_SQLITE=(bool, False),
+    USE_CELERY=(bool, True),
+)
 
 environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 DEBUG = env("DEBUG")
 SECRET_KEY = env("SECRET_KEY")
+USE_CELERY = env.bool("USE_CELERY")
 
 
 ALLOWED_HOSTS = env.list(
@@ -32,11 +37,19 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "crispy_forms",
     "crispy_bootstrap5",
-    "debug_toolbar",
     "django_filters",
-    "django_extensions",
-    "django_celery_beat",
 ]
+
+if DEBUG:
+    INSTALLED_APPS += [
+        "debug_toolbar",
+        "django_extensions",
+    ]
+
+if USE_CELERY:
+    INSTALLED_APPS += [
+        "django_celery_beat",
+    ]
 
 INSTALLED_EXTENSIONS = ["accounts", "pages", "services", "bookings"]
 
@@ -47,12 +60,17 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    "debug_toolbar.middleware.DebugToolbarMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(
+        1,
+        "debug_toolbar.middleware.DebugToolbarMiddleware",
+    )
 
 REST_FRAMEWORK = {
     "DEFAULT_FILTER_BACKENDS": [
@@ -161,21 +179,23 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 # EMAIL_HOST_PASSWORD = hasło / token aplikacyjny
 # DEFAULT_FROM_EMAIL = adres nadawcy
 
+if USE_CELERY:
+    CELERY_BROKER_URL = env(
+        "CELERY_BROKER_URL",
+        default="redis://redis:6379/0",
+    )
+    CELERY_RESULT_BACKEND = env(
+        "CELERY_RESULT_BACKEND",
+        default=CELERY_BROKER_URL,
+    )
 
-# === Celery ===
-CELERY_BROKER_URL = "redis://redis:6379/0"
-CELERY_RESULT_BACKEND = "redis://redis:6379/0"
-
-# Serializacja – JSON jest bezpieczniejszy niż pickle
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_TASK_SERIALIZER = "json"
-CELERY_RESULT_SERIALIZER = "json"
-
-# Strefa czasowa – zgodna z TIME_ZONE Django
-CELERY_TIMEZONE = "Europe/Warsaw"
-
-# Śledzenie statusu tasku (PENDING → STARTED → SUCCESS/FAILURE)
-CELERY_TASK_TRACK_STARTED = True
-
-# Jak długo przechowywać wyniki (w sekundach) – domyślnie 24h
-CELERY_RESULT_EXPIRES = 3600 * 24
+    # Serializacja – JSON jest bezpieczniejszy niż pickle
+    CELERY_ACCEPT_CONTENT = ["json"]
+    CELERY_TASK_SERIALIZER = "json"
+    CELERY_RESULT_SERIALIZER = "json"
+    # Strefa czasowa – zgodna z TIME_ZONE Django
+    CELERY_TIMEZONE = "Europe/Warsaw"
+    # Śledzenie statusu tasku (PENDING → STARTED → SUCCESS/FAILURE)
+    CELERY_TASK_TRACK_STARTED = True
+    # Jak długo przechowywać wyniki (w sekundach) – domyślnie 24h
+    CELERY_RESULT_EXPIRES = 3600 * 24
